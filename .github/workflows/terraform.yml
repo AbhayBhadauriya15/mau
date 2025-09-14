@@ -1,0 +1,21 @@
+name: terraform_validation
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  terraform_validate
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: checkoutcode
+        uses: actions/checkout@v4
+      - name: terraform_initialiaze
+        run: terraform init
+      - name: terraform_validate
+        run: terraform validate
+      - name: terraform_plan
+        run: terraform plan
+  
