@@ -24,6 +24,3 @@ location = azurerm_resource_group.mau.location
 account_tier = "standard"
 account_replication_type = "LRS"
 }
-
-
-}
