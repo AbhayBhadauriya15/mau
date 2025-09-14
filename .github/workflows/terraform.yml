@@ -6,13 +6,17 @@ on:
       - main
 
 jobs:
-  terraform_validate
+  terraform_validate:
     runs-on: ubuntu-latest
     
     steps:
-      - name: checkoutcode
+      - name: checkout code
         uses: actions/checkout@v4
-      - name: terraform_initialiaze
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      - name: terraform_initialize
         run: terraform init
       - name: terraform_validate
         run: terraform validate
