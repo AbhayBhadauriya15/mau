@@ -23,3 +23,12 @@ resource "azurerm_storage_account" "mystg" {
   account_tier = "Standard"
   account_replication_type = "LRS"
 }
+
+// Storage Account
+resource "azurerm_storage_account" "amwaghstg" {
+  name = "amwaghstorage1905"
+  resource_group_name = azurerm_resource_group.mau.name
+  location = azurerm_resource_group.mau.location
+  account_tier = "Standard"
+  account_replication_type = "LRS"
+}
