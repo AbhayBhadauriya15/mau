@@ -1,32 +1,91 @@
-name: terraform_validation
+# name: terraform_validation
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# jobs:
+#   terraform_validate:
+#     runs-on: ubuntu-latest
+#     env:
+#       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+#       ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+#       ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+#       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+    
+#     steps:
+#       - name: checkout code
+#         uses: actions/checkout@v4
+        
+#       - name: Setup Terraform
+#         uses: hashicorp/setup-terraform@v1
+        
+#       - name: terraform_initialize 
+#         run: terraform init
+        
+#       - name: terraform_validate
+#         run: terraform validate
+        
+#       - name: terraform_plan
+#         run: terraform plan
+  
+
+
+name: Terraform Pipeline
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Choose environment to deploy"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
 
 jobs:
-  terraform_validate:
+  terraform:
     runs-on: ubuntu-latest
+
     env:
-      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
-      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
-      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
-    
+      TF_VAR_environment: ${{ github.event.inputs.environment }}  # pass to terraform
+
     steps:
-      - name: checkout code
-        uses: actions/checkout@v4
-        
+      # Step 1: Checkout code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Step 2: Setup Terraform
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v1
-        
-      - name: terraform_initialize 
-        run: terraform init
-        
-      - name: terraform_validate
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.7
+
+      # Step 3: Configure AWS creds (from GitHub Secrets)
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      # Step 4: Terraform Init (with backend per environment)
+      - name: Terraform Init
+        run: terraform init -backend-config="backend/${{ github.event.inputs.environment }}.tfbackend"
+
+      # Step 5: Terraform Validate
+      - name: Terraform Validate
         run: terraform validate
-        
-      - name: terraform_plan
-        run: terraform plan
-  
+
+      # Step 6: Terraform Plan
+      - name: Terraform Plan
+        run: terraform plan -var="environment=${{ github.event.inputs.environment }}"
+
+      # Step 7: Terraform Apply (only for non-prod auto approve)
+      - name: Terraform Apply
+        if: github.event.inputs.environment != 'prod'
+        run: terraform apply -auto-approve -var="environment=${{ github.event.inputs.environment }}"
